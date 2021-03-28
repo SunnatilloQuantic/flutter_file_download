@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
-import 'package:downloads_path_provider_28/downloads_path_provider_28.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:open_file/open_file.dart';
@@ -61,6 +60,7 @@ class _MyHomePageState extends State<MyHomePage> {
     final obj = jsonDecode(json);
 
     if (obj['isSuccess']) {
+      print(obj['filePath']);
       OpenFile.open(obj['filePath']);
     } else {
       showDialog(
@@ -93,23 +93,14 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<Directory> _getDownloadDirectory() async {
-    if (Platform.isAndroid) {
-      return await DownloadsPathProvider.downloadsDirectory;
-    }
     return await getApplicationDocumentsDirectory();
   }
 
   Future<bool> _requestPermissions() async {
-    var permission = await PermissionHandler()
-        .checkPermissionStatus(PermissionGroup.storage);
-
-    if (permission != PermissionStatus.granted) {
-      await PermissionHandler().requestPermissions([PermissionGroup.storage]);
-      permission = await PermissionHandler()
-          .checkPermissionStatus(PermissionGroup.storage);
+    if (await Permission.storage.request().isGranted) {
+      await Permission.storage.request();
     }
-
-    return permission == PermissionStatus.granted;
+    return await Permission.storage.request().isGranted;
   }
 
   void _onReceiveProgress(int received, int total) {
@@ -134,6 +125,7 @@ class _MyHomePageState extends State<MyHomePage> {
       result['filePath'] = savePath;
     } catch (ex) {
       result['error'] = ex.toString();
+      print(result);
     } finally {
       await _showNotification(result);
     }
